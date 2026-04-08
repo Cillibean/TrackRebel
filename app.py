@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, update, delete, insert
 from sqlalchemy.orm import Session
 from database import SessionLocal
@@ -10,6 +12,8 @@ from web_models import LoginRequest, Token
 import os
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-secret")
 ALGORITHM = "HS256"
@@ -62,8 +66,10 @@ async def protected(current_user: User = Depends(get_current_user)):
     return {"logged_in_as": current_user.id}
 
 @app.get("/")
-async def index():
-    return {"message": "Hello, World!"}
+async def index(request: Request):
+    return templates.TemplateResponse(
+        request=request, name="forms/register.html"
+    )
 
 if __name__ == "__main__":
     import uvicorn
