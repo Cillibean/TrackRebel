@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="login-card">
+    <div class="login-copy">
+      <p class="tag">REBEL ACCESS</p>
+      <h2>Login to TrackRebel</h2>
+      <p>Enter your credentials to unlock the dashboard. Your JWT will be issued and stored securely on login.</p>
+    </div>
+
+    <form class="login-form" method="post" action="/login">
+      {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      {% if success %}
+        <div class="alert alert-success">{{ success }}</div>
+      {% endif %}
+
+      <label class="field-label">{{ form.username.label }}</label>
+      {{ form.username(class_='field-input') }}
+      {% if form.username.errors %}
+        <p class="field-error">{{ form.username.errors[0] }}</p>
+      {% endif %}
+
+      <label class="field-label">{{ form.password.label }}</label>
+      {{ form.password(class_='field-input') }}
+      {% if form.password.errors %}
+        <p class="field-error">{{ form.password.errors[0] }}</p>
+      {% endif %}
+
+      <button type="submit" class="action-button">Sign In</button>
+    </form>
+  </section>
+{% endblock %}

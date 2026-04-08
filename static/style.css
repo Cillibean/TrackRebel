@@ -227,3 +227,88 @@ body {
     justify-content: flex-start;
   }
 }
+
+.login-card {
+  display: grid;
+  gap: 2rem;
+  padding: 2rem;
+  border-radius: 28px;
+  background: rgba(18, 24, 47, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.login-copy h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 3vw, 2.5rem);
+}
+
+.login-copy p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 32rem;
+  line-height: 1.8;
+}
+
+.login-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.field-input {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: rgba(255, 61, 111, 0.7);
+  box-shadow: 0 0 0 4px rgba(255, 61, 111, 0.1);
+}
+
+.field-error {
+  margin: 0;
+  color: #ff6b81;
+  font-size: 0.9rem;
+}
+
+.alert {
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.alert-danger {
+  background: rgba(255, 61, 111, 0.12);
+  border: 1px solid rgba(255, 61, 111, 0.24);
+  color: #ffb3c2;
+}
+
+.alert-success {
+  background: rgba(75, 217, 132, 0.12);
+  border: 1px solid rgba(75, 217, 132, 0.24);
+  color: #baf0d1;
+}
+
+.login-form .action-button {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .login-card {
+    padding: 1.5rem;
+  }
+}
