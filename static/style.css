@@ -1,14 +1,14 @@
 :root {
   color-scheme: dark;
-  --bg: #090b12;
-  --panel: rgba(20, 25, 44, 0.92);
-  --panel-strong: rgba(27, 32, 57, 0.98);
-  --text: #f8f9ff;
-  --muted: #92a0c0;
-  --accent: #ff3d6f;
-  --accent-soft: rgba(255, 61, 111, 0.18);
+  --bg: #0f162a;
+  --panel: rgba(18, 24, 40, 0.94);
+  --panel-strong: rgba(20, 26, 44, 0.98);
+  --text: #f3f5fb;
+  --muted: #9ab0d3;
+  --accent: #ff758f;
+  --accent-soft: rgba(255, 117, 143, 0.16);
   --border: rgba(255, 255, 255, 0.08);
-  --shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
+  --shadow: 0 18px 32px rgba(0, 0, 0, 0.22);
 }
 
 * {
@@ -20,8 +20,8 @@ body {
   min-height: 100vh;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--text);
-  background: radial-gradient(circle at top, rgba(255, 61, 111, 0.12), transparent 25%),
-              linear-gradient(180deg, #0d1020 0%, #07090f 55%, #020305 100%);
+  background: radial-gradient(circle at top, rgba(255, 117, 143, 0.08), transparent 30%),
+              linear-gradient(180deg, #121a2f 0%, #0b1222 55%, #070b16 100%);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -29,35 +29,35 @@ body {
 }
 
 .shell {
-  width: min(1100px, 100%);
-  background: linear-gradient(180deg, rgba(14, 18, 38, 0.95), rgba(9, 11, 18, 0.96));
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 30px;
+  width: min(1050px, 100%);
+  background: linear-gradient(180deg, rgba(18, 24, 42, 0.95), rgba(14, 18, 36, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
   box-shadow: var(--shadow);
   padding: 2rem;
-  backdrop-filter: blur(15px);
+  backdrop-filter: blur(12px);
 }
 
 .hero-panel {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.8rem;
 }
 
 .rebel-mark {
-  width: 84px;
-  height: 84px;
+  width: 72px;
+  height: 72px;
   display: grid;
   place-items: center;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #ff3d6f, #8f4cff);
+  border-radius: 22px;
+  background: linear-gradient(135deg, #ff758f, #bb6de2);
   color: white;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  box-shadow: 0 16px 40px rgba(255, 61, 111, 0.25);
+  letter-spacing: 0.06em;
+  box-shadow: 0 12px 24px rgba(255, 117, 143, 0.2);
 }
 
 .eyebrow {
@@ -156,14 +156,14 @@ body {
 
 .action-button {
   color: white;
-  background: linear-gradient(135deg, #ff3d6f, #ff7a4c);
-  box-shadow: 0 20px 40px rgba(255, 61, 111, 0.22);
+  background: linear-gradient(135deg, #ff758f, #ee8c64);
+  box-shadow: 0 14px 28px rgba(255, 117, 143, 0.16);
 }
 
 .ghost-button {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .intro-blast {
@@ -172,17 +172,17 @@ body {
   border-radius: 26px;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at top, rgba(255, 61, 111, 0.16), transparent 35%),
-              linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: radial-gradient(circle at top, rgba(255, 117, 143, 0.08), transparent 45%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .blast-glow {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle, rgba(255, 61, 111, 0.4), transparent 40%);
-  filter: blur(26px);
+  background: radial-gradient(circle, rgba(255, 117, 143, 0.24), transparent 45%);
+  filter: blur(18px);
 }
 
 .blast-panel {
@@ -274,13 +274,13 @@ body {
 
 .field-input:focus {
   outline: none;
-  border-color: rgba(255, 61, 111, 0.7);
-  box-shadow: 0 0 0 4px rgba(255, 61, 111, 0.1);
+  border-color: rgba(255, 117, 143, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 117, 143, 0.12);
 }
 
 .field-error {
   margin: 0;
-  color: #ff6b81;
+  color: #ff9ab8;
   font-size: 0.9rem;
 }
 
@@ -292,9 +292,9 @@ body {
 }
 
 .alert-danger {
-  background: rgba(255, 61, 111, 0.12);
-  border: 1px solid rgba(255, 61, 111, 0.24);
-  color: #ffb3c2;
+  background: rgba(255, 117, 143, 0.1);
+  border: 1px solid rgba(255, 117, 143, 0.22);
+  color: #ffd1da;
 }
 
 .alert-success {
