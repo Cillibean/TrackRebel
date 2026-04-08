@@ -68,7 +68,7 @@ async def protected(current_user: User = Depends(get_current_user)):
 @app.get("/")
 async def index(request: Request):
     return templates.TemplateResponse(
-        request=request, name="forms/register.html"
+        request=request, name="index.html"
     )
 
 if __name__ == "__main__":
