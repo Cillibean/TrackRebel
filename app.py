@@ -1,22 +1,36 @@
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from database import SessionLocal
-from sqlalchemy import select, update, delete, insert
 from models import User
-from contextlib import contextmanager
-
-from flask_jwt_extended import (
-    JWTManager, create_access_token,
-    jwt_required, get_jwt_identity
-)
+from pydantic import BaseModel
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
 import os
 
-app = Flask(__name__)
+app = FastAPI()
 
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-secret")
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-secret")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-jwt = JWTManager(app)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-@contextmanager
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
 def get_db():
     db = SessionLocal()
     try:
@@ -24,29 +38,40 @@ def get_db():
     finally:
         db.close()
 
-@app.post("/login")
-def post_login():
-    data = request.json
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
-    with get_db() as db:
-        stmt = select(User).where(User.username == data["username"]).limit(1)
-        user = db.execute(stmt).scalar_one_or_none()
-
-        if user and user.check_password(data["password"]):
-            token = create_access_token(identity=user.id)
-            return {"access_token": token}
-
-    return {"error": "bad credentials"}, 401
+@app.post("/login", response_model=Token)
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == request.username).first()
+    if not user or not user.check_password(request.password):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/protected")
-@jwt_required()
-def protected():
-    user_id = get_jwt_identity()
-    return {"logged_in_as": user_id}
+async def protected(current_user: User = Depends(get_current_user)):
+    return {"logged_in_as": current_user.id}
 
 @app.get("/")
-def index():
-    return "Hello, World!" 
+async def index():
+    return {"message": "Hello, World!"}
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
