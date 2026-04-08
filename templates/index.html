@@ -22,8 +22,12 @@
       <h2>Protest Map</h2>
       <p>Use this map to track protests and resistance activities across Ireland.</p>
     </div>
+    <script type="text/javascript">
+        var events = {{ all_events|default([])|tojson }};
+    </script>
     <div id="map" class="map-frame">
       <script type="text/javascript" src="{{ request.url_for('static', path='js/map.js') }}"></script>
+      <script type="text/javascript" src="{{ request.url_for('static', path='js/event_display.js') }}"></script>
     </div>
   </section>
 {% endblock %}

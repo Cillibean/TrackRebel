@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="event-info-card">
+  <div class="event-info-head">
+    <span class="tag">EVENT INFO</span>
+    <h2>{{ events[0].title }}</h2>
+    <p>Detailed event context, timing, and location.</p>
+  </div>
+
+  <div class="event-info-layout">
+    <div class="event-info-map-wrap">
+      <div id="map" class="event-info-map"></div>
+      <p class="coord-display">Pinned at {{ events[0].latitude }}, {{ events[0].longitude }}</p>
+    </div>
+
+    <article class="event-info-panel">
+      <div class="event-meta-grid">
+        <div class="meta-item">
+          <p class="meta-label">Type</p>
+          <p class="meta-value">{{ events[0].type or "N/A" }}</p>
+        </div>
+        <div class="meta-item">
+          <p class="meta-label">Submitted By</p>
+          <p class="meta-value">{{ events[0].submitter or "N/A" }}</p>
+        </div>
+        <div class="meta-item">
+          <p class="meta-label">Start Time</p>
+          <p class="meta-value">{{ events[0].start_time or "Not set" }}</p>
+        </div>
+        <div class="meta-item">
+          <p class="meta-label">End Time</p>
+          <p class="meta-value">{{ events[0].end_time or "Not set" }}</p>
+        </div>
+        <div class="meta-item meta-item-wide">
+          <p class="meta-label">Coordinates</p>
+          <p class="meta-value">{{ events[0].latitude }}, {{ events[0].longitude }}</p>
+        </div>
+      </div>
+
+      <section class="event-description">
+        <h3>Description</h3>
+        <p>{{ events[0].description or "No description provided." }}</p>
+      </section>
+
+      <div class="button-row">
+        {% if logged_in and user.username == events[0].submitter %}
+        <a class="action-button" href="/events/edit/{{ events[0].id }}">Edit Event</a>
+        {% endif %}
+        <a class="action-button" href="/">Back To Map</a>
+      </div>
+    </article>
+  </div>
+
+<script type="text/javascript">
+    var events = {{ events|default([])|tojson }};
+</script>
+<script type="text/javascript" src="{{ request.url_for('static', path='js/map.js') }}"></script>
+<script type="text/javascript" src="{{ request.url_for('static', path='js/event_display.js') }}"></script>
+</section>
+
+{% endblock %}

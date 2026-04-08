@@ -4,8 +4,8 @@
 <section class="event-builder-card">
     <div class="event-builder-head">
         <span class="tag">EVENT BUILDER</span>
-        <h2>Add Event</h2>
-        <p>Select the event location directly on the map, then complete the event details in the form.</p>
+    <h2>{{ form_title or "Add Event" }}</h2>
+    <p>{{ form_intro or "Select the event location directly on the map, then complete the event details in the form." }}</p>
     </div>
 
   {% if error %}
@@ -21,7 +21,7 @@
         <p id="coord-display" class="coord-display">Click the map to choose latitude and longitude.</p>
         </div>
 
-        <form class="event-form" method="post" action="/events/add">
+        <form class="event-form" action="" method="POST" novalidate>
         {{ form.latitude(id='latitude') }}
         {{ form.longitude(id='longitude') }}
 
@@ -55,7 +55,7 @@
             <p class="field-error">{{ form.end_time.errors[0] }}</p>
         {% endif %}
 
-        {{ form.submit(class_='action-button') }}
+        {{ form.submit(class_='action-button', value=(submit_label or "Add Event")) }}
         </form>
     </div>
 

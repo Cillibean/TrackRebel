@@ -1,10 +1,18 @@
 from wtforms import DateTimeLocalField, Form, StringField, PasswordField, SubmitField, TextAreaField, HiddenField, SelectField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, Optional, EqualTo, ValidationError, Email
 
 class LoginForm(Form):
     username = StringField("Username", validators=[DataRequired(), Length(min=2, max=32)])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=4, max=64)])
     submit = SubmitField("Submit")
+
+class RegistrationForm(Form):
+    username = StringField("Username", validators=[DataRequired(), Length(min=2, max=32)])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=4, max=64)])
+    confirm_password = PasswordField("Confirm Password", validators=[DataRequired(), EqualTo("password", message="Passwords must match")])
+    email = StringField("Email (Optional)", validators=[Optional(), Email()])
+    phone = StringField("Phone (Optional)", validators=[Optional(), Length(max=20)])
+    submit = SubmitField("Create Account")
 
 class AddEventForm(Form):
     name = StringField("Event Name", validators=[DataRequired(), Length(min=2, max=80)])

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="login-card">
+    <div class="login-copy">
+      <p class="tag">JOIN UP</p>
+      <h2>Create Your Account</h2>
+      <p>Sign up for TrackRebel to start tracking and reporting resistance activities across Ireland.</p>
+    </div>
+
+    <form class="login-form" method="post" action="/register">
+      {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+
+      <label class="field-label">{{ form.username.label }}</label>
+      {{ form.username(class_='field-input') }}
+      {% if form.username.errors %}
+        <p class="field-error">{{ form.username.errors[0] }}</p>
+      {% endif %}
+
+      <label class="field-label">{{ form.password.label }}</label>
+      {{ form.password(class_='field-input') }}
+      {% if form.password.errors %}
+        <p class="field-error">{{ form.password.errors[0] }}</p>
+      {% endif %}
+
+      <label class="field-label">{{ form.confirm_password.label }}</label>
+      {{ form.confirm_password(class_='field-input') }}
+      {% if form.confirm_password.errors %}
+        <p class="field-error">{{ form.confirm_password.errors[0] }}</p>
+      {% endif %}
+
+      <label class="field-label">{{ form.email.label }}</label>
+      {{ form.email(class_='field-input', placeholder='your@email.com') }}
+      {% if form.email.errors %}
+        <p class="field-error">{{ form.email.errors[0] }}</p>
+      {% endif %}
+
+      <label class="field-label">{{ form.phone.label }}</label>
+      {{ form.phone(class_='field-input', placeholder='+353 1 234 5678') }}
+      {% if form.phone.errors %}
+        <p class="field-error">{{ form.phone.errors[0] }}</p>
+      {% endif %}
+
+      <button type="submit" class="action-button">Create Account</button>
+    </form>
+
+    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
+      <p style="margin: 0; color: var(--muted);">Already have an account? <a href="/login" style="color: var(--accent); text-decoration: none; font-weight: 600;">Sign In</a></p>
+    </div>
+  </section>
+{% endblock %}
