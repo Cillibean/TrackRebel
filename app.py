@@ -107,14 +107,12 @@ async def login_form(request: Request):
     form = LoginForm()
     return templates.TemplateResponse(
         "login.html",
-        {"request": request, "form": form, "error": None, "success": None},
+        {"request": request, "form": form},
     )
 
 @app.post("/login")
 async def login(request: Request, db: Session = Depends(get_db)):
     form = LoginForm(formdata=await request.form())
-    error = None
-    success = None
     token = None
     user = None
 
@@ -122,18 +120,16 @@ async def login(request: Request, db: Session = Depends(get_db)):
         user = db.execute(select(User).filter(User.username == form.username.data)).scalar_one_or_none()
         if user and user.check_password(form.password.data):
             token = create_access_token(data={"sub": str(user.username)})
-            success = "Login successful. Token issued and stored in cookie."
-        else:
-            error = "Incorrect username or password"
-    else:
-        error = "Please fix the highlighted fields and try again."
+    
+    response =  templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"form": form}
+    )
     
     if token:
         user = form.username.data
-
-    response = RedirectResponse(url="/", status_code=302)
-
-    if token:
+        response = RedirectResponse(url="/", status_code=302)
         response.set_cookie(
             key="access_token",
             value=f"Bearer {token}",
