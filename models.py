@@ -6,8 +6,7 @@ import bcrypt
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[str] = mapped_column(String(50), unique=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, primary_key=True)
     password_hash: Mapped[str] = mapped_column(String(200))
 
     def set_password(self, password: str):

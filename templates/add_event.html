@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="event-builder-card">
+    <div class="event-builder-head">
+        <span class="tag">EVENT BUILDER</span>
+        <h2>Add Event</h2>
+        <p>Select the event location directly on the map, then complete the event details in the form.</p>
+    </div>
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+  {% endif %}
+
+    <div class="event-builder-grid">
+        <div class="event-map-wrap">
+        <div id="map" class="event-map"></div>
+        <p id="coord-display" class="coord-display">Click the map to choose latitude and longitude.</p>
+        </div>
+
+        <form class="event-form" method="post" action="/events/add">
+        {{ form.latitude(id='latitude') }}
+        {{ form.longitude(id='longitude') }}
+
+        <label class="field-label" for="name">{{ form.name.label }}</label>
+        {{ form.name(class_='field-input', id='name', placeholder='Event name') }}
+        {% if form.name.errors %}
+            <p class="field-error">{{ form.name.errors[0] }}</p>
+        {% endif %}
+        
+        <label class="field-label" for="event_type">{{ form.event_type.label }}</label>
+        {{ form.event_type(class_='field-input', id='event_type') }}
+        {% if form.event_type.errors %}
+            <p class="field-error">{{ form.event_type.errors[0] }}</p>
+        {% endif %}
+
+        <label class="field-label" for="description">{{ form.description.label }}</label>
+        {{ form.description(class_='field-input field-textarea', id='description', placeholder='Event description') }}
+        {% if form.description.errors %}
+            <p class="field-error">{{ form.description.errors[0] }}</p>
+        {% endif %}
+
+        <label class="field-label" for="start_time">{{ form.start_time.label }}</label>
+        {{ form.start_time(class_='field-input', id='start_time') }}
+        {% if form.start_time.errors %}
+            <p class="field-error">{{ form.start_time.errors[0] }}</p>
+        {% endif %}
+
+        <label class="field-label" for="end_time">{{ form.end_time.label }}</label>
+        {{ form.end_time(class_='field-input', id='end_time') }}
+        {% if form.end_time.errors %}
+            <p class="field-error">{{ form.end_time.errors[0] }}</p>
+        {% endif %}
+
+        {{ form.submit(class_='action-button') }}
+        </form>
+    </div>
+
+  {% if submitted_event %}
+    <div class="event-preview">
+      <h3>Submitted Draft</h3>
+      <p><strong>Name:</strong> {{ submitted_event.name }}</p>
+      <p><strong>Type:</strong> {{ submitted_event.event_type }}</p>
+      <p><strong>Coordinates:</strong> {{ submitted_event.latitude }}, {{ submitted_event.longitude }}</p>
+    </div>
+  {% endif %}
+</section>
+
+<script type="text/javascript" src="/static/js/map.js"></script>
+<script type="text/javascript" src="/static/js/add_event.js"></script>
+{% endblock %}

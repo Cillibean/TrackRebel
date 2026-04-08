@@ -1,14 +1,19 @@
 from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, update, delete, insert
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User
-from forms import LoginForm
+from forms import LoginForm, AddEventForm
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
+from typing import Optional
 import os
+
+load_dotenv()
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -32,39 +37,70 @@ def get_db():
     finally:
         db.close()
 
-async def get_current_user(request: Request, db: Session = Depends(get_db)):
+def _read_token(request: Request) -> Optional[str]:
+    authorization = request.headers.get("Authorization")
+    if authorization and authorization.startswith("Bearer "):
+        return authorization.split(" ", 1)[1]
+
+    cookie_value = request.cookies.get("access_token")
+    if cookie_value:
+        return cookie_value.split(" ", 1)[1] if cookie_value.startswith("Bearer ") else cookie_value
+
+    return None
+
+def _get_user_from_token(token: str, db: Session) -> User:
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-
-    token = None
-    authorization = request.headers.get("Authorization")
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ", 1)[1]
-    elif request.cookies.get("access_token"):
-        cookie_value = request.cookies.get("access_token")
-        if cookie_value.startswith("Bearer "):
-            token = cookie_value.split(" ", 1)[1]
-        else:
-            token = cookie_value
-
-    if not token:
-        raise credentials_exception
-
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        username: str = payload.get("sub")
+        if username is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise credentials_exception
     return user
+
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = _read_token(request)
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return _get_user_from_token(token, db)
+
+async def get_current_user_optional(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
+    token = _read_token(request)
+    if not token:
+        request.state.authenticated = False
+        request.state.auth_error = "no_token"
+        return None
+
+    try:
+        user = _get_user_from_token(token, db)
+        request.state.authenticated = True
+        request.state.auth_error = None
+        return user
+    except HTTPException as exc:
+        request.state.authenticated = False
+        request.state.auth_error = exc.detail
+        return None
+    
+def base_context(request: Request, current_user: Optional[User] = Depends(get_current_user_optional)):
+    return {
+        "user": current_user,
+        "logged_in": current_user is not None,
+        "authenticated": getattr(request.state, "authenticated", False),
+        "auth_error": getattr(request.state, "auth_error", None),
+    }
 
 @app.get("/login")
 async def login_form(request: Request):
@@ -80,27 +116,22 @@ async def login(request: Request, db: Session = Depends(get_db)):
     error = None
     success = None
     token = None
+    user = None
 
     if form.validate():
         user = db.execute(select(User).filter(User.username == form.username.data)).scalar_one_or_none()
         if user and user.check_password(form.password.data):
-            token = create_access_token(data={"sub": str(user.id)})
+            token = create_access_token(data={"sub": str(user.username)})
             success = "Login successful. Token issued and stored in cookie."
         else:
             error = "Incorrect username or password"
     else:
         error = "Please fix the highlighted fields and try again."
+    
+    if token:
+        user = form.username.data
 
-    response = templates.TemplateResponse(
-        "login.html",
-        {
-            "request": request,
-            "form": form,
-            "error": error,
-            "success": success,
-            "token": token,
-        },
-    )
+    response = RedirectResponse(url="/", status_code=302)
 
     if token:
         response.set_cookie(
@@ -113,14 +144,68 @@ async def login(request: Request, db: Session = Depends(get_db)):
 
     return response
 
-@app.get("/protected")
-async def protected(current_user: User = Depends(get_current_user)):
-    return {"logged_in_as": current_user.id}
+@app.get("/logout")
+async def logout(request: Request):
+    response = RedirectResponse(url="/", status_code=302)
+    response.delete_cookie("access_token")
+    return response
 
 @app.get("/")
-async def index(request: Request):
+async def index(request: Request, current_user: Optional[User] = Depends(get_current_user_optional)):
     return templates.TemplateResponse(
-        request=request, name="index.html"
+        request=request,
+        name="index.html",
+        context=base_context(request, current_user)
+    )
+
+@app.get("/events/add")
+async def add_event_form(request: Request, current_user: User = Depends(get_current_user)):
+    form = AddEventForm()
+    return templates.TemplateResponse(
+        request=request,
+        name="add_event.html",
+        context={
+            **base_context(request, current_user),
+            "form": form,
+            "error": None,
+            "success": None,
+            "submitted_event": None,
+        },
+    )
+
+
+@app.post("/events/add")
+async def add_event_submit(request: Request, current_user: User = Depends(get_current_user)):
+    form = AddEventForm(formdata=await request.form())
+    error = None
+    success = None
+    submitted_event = None
+
+    if form.validate():
+        success = "Event draft captured. You can wire this to your database model next."
+        submitted_event = {
+            "name": form.name.data,
+            "description": form.description.data,
+            "start_time": form.start_time.data,
+            "end_time": form.end_time.data,
+            "event_type": form.event_type.data,
+            "latitude": form.latitude.data,
+            "longitude": form.longitude.data,
+            "submitter": current_user.username
+        }
+    else:
+        error = "Please complete all required fields and pick a location on the map."
+
+    return templates.TemplateResponse(
+        request=request,
+        name="add_event.html",
+        context={
+            **base_context(request, current_user),
+            "form": form,
+            "error": error,
+            "success": success,
+            "submitted_event": submitted_event,
+        },
     )
 
 if __name__ == "__main__":

@@ -2,3 +2,20 @@ venv
 .env
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Local databases
+*.sqlite3
+*.db
+
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
+
+# Editor/system noise
+.DS_Store
+Thumbs.db

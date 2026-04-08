@@ -3,17 +3,27 @@
 {% block content %}
   <section class="intro-card">
     <div class="intro-copy">
-      <span class="tag">REBEL MODE</span>
+      <span class="tag">HOME PAGE</span>
       <h2>Welcome to TrackRebel.</h2>
       <p>Track the resistance of the Irish People.</p>
       <div class="button-row">
-        <a class="action-button" href="/login">Sign In</a>
-        <a class="ghost-button" href="/protected">Protected Area</a>
+        {% if logged_in %}
+          <a class="action-button" href="/events/add">Add Event</a>
+        {% else %}
+          <a class="action-button" href="/login">Sign In</a>
+        {% endif %}
       </div>
     </div>
-    <div class="intro-blast">
-      <div class="blast-glow"></div>
-      <div class="blast-panel">Live. Locked. Loaded.</div>
+  </section>
+
+  <section class="map-card">
+    <div class="map-header">
+      <span class="tag">MAP</span>
+      <h2>Protest Map</h2>
+      <p>Use this map to track protests and resistance activities across Ireland.</p>
+    </div>
+    <div id="map" class="map-frame">
+        <script type="text/javascript" src="/static/js/map.js"></script>
     </div>
   </section>
 {% endblock %}
