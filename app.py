@@ -1,11 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import select, update, delete, insert
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User
-from pydantic import BaseModel
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from web_models import LoginRequest, Token
 import os
 
 app = FastAPI()
@@ -16,17 +17,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(datetime.timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -58,7 +51,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @app.post("/login", response_model=Token)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == request.username).first()
+    user = db.execute(select(User).filter(User.username == request.username)).first()
     if not user or not user.check_password(request.password):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     access_token = create_access_token(data={"sub": str(user.id)})
