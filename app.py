@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, update, delete, insert
 from sqlalchemy.orm import Session
 from database import SessionLocal, Base, engine
-from events_db import add_event_to_db, get_all_events, get_event_by_id, delete_expired_events
+from events_db import add_event_to_db, get_all_events, get_event_by_id, delete_expired_events, delete_event_by_id
 from models import User
 from forms import LoginForm, AddEventForm, RegistrationForm
 from jose import JWTError, jwt
@@ -169,6 +169,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
     if form.validate():
         user = db.execute(select(User).filter(User.username == form.username.data)).scalar_one_or_none()
         if user and user.check_password(form.password.data):
+            logger.info(f"User {form.username.data} logged in successfully")
             token = create_access_token(data={"sub": str(user.username)})
     
     response =  templates.TemplateResponse(
@@ -189,6 +190,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
             samesite="lax",
         )
 
+    logger.info(f"Login attempt for user {form.username.data}, success: {token is not None}")
     return response
 
 @app.get("/register")
@@ -277,9 +279,12 @@ async def add_event_submit(request: Request, current_user: User = Depends(get_cu
         submitted_event = {
             "name": form.name.data,
             "description": form.description.data,
+            "link": form.link.data,
+            "contact": form.contact.data,
             "start_time": form.start_time.data,
             "end_time": form.end_time.data,
             "event_type": form.event_type.data,
+            "category": form.category.data,
             "latitude": form.latitude.data,
             "longitude": form.longitude.data,
             "submitter": current_user.username
@@ -322,6 +327,16 @@ def _parse_event_datetime(value: Optional[str]):
         return None
 
 
+def _format_event_datetime(value: Optional[str]) -> Optional[str]:
+    parsed = _parse_event_datetime(value)
+    if not parsed:
+        return None
+
+    # Render as concise local date/time without timezone suffix.
+    local_dt = parsed.astimezone()
+    return local_dt.strftime("%Y-%m-%d %H:%M")
+
+
 @app.get("/events/edit/{event_id}")
 async def edit_event_form(request: Request, event_id: int, current_user: User = Depends(get_current_user)):
     event = get_event_by_id(event_id)
@@ -335,9 +350,12 @@ async def edit_event_form(request: Request, event_id: int, current_user: User = 
         data={
             "name": event.get("title", ""),
             "description": event.get("description", ""),
+            "link": event.get("link", ""),
+            "contact": event.get("contact", ""),
             "start_time": _parse_event_datetime(event.get("start_time")),
             "end_time": _parse_event_datetime(event.get("end_time")),
             "event_type": event.get("type", "other"),
+            "category": event.get("category", "other"),
             "latitude": str(event.get("latitude", "")),
             "longitude": str(event.get("longitude", "")),
         }
@@ -377,9 +395,12 @@ async def edit_event_submit(request: Request, event_id: int, current_user: User 
         submitted_event = {
             "name": form.name.data,
             "description": form.description.data,
+            "link": form.link.data,
+            "contact": form.contact.data,
             "start_time": form.start_time.data,
             "end_time": form.end_time.data,
             "event_type": form.event_type.data,
+            "category": form.category.data,
             "latitude": form.latitude.data,
             "longitude": form.longitude.data,
             "submitter": current_user.username,
@@ -413,9 +434,12 @@ async def edit_event_submit(request: Request, event_id: int, current_user: User 
 async def event_info(request: Request, event_id: int, current_user: Optional[User] = Depends(get_current_user_optional), db: Session = Depends(get_db)):
     event = get_event_by_id(event_id)
     logger.info(f"Fetched event for id {event_id}: {event}")
-    events = [event] if event else []
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+
+    event["start_time_display"] = _format_event_datetime(event.get("start_time"))
+    event["end_time_display"] = _format_event_datetime(event.get("end_time"))
+    events = [event]
 
     return templates.TemplateResponse(
         request=request,
@@ -425,6 +449,29 @@ async def event_info(request: Request, event_id: int, current_user: Optional[Use
             "events": events
         }
     )
+
+
+@app.post("/events/delete/{event_id}")
+async def delete_event_submit(request: Request, event_id: int, current_user: User = Depends(get_current_user)):
+    event = get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    if event.get("submitter") != current_user.username:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this event")
+
+    try:
+        deleted_rows = delete_event_by_id(event_id)
+        if not deleted_rows:
+            raise HTTPException(status_code=404, detail="Event not found")
+        logger.info("Event %s deleted by %s", event_id, current_user.username)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to delete event %s", event_id)
+        raise HTTPException(status_code=500, detail="Unable to delete event right now. Please try again.")
+
+    return RedirectResponse(url="/", status_code=302)
 
 if __name__ == "__main__":
     import uvicorn

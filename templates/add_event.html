@@ -31,18 +31,12 @@
             <p class="field-error">{{ form.name.errors[0] }}</p>
         {% endif %}
         
-        <label class="field-label" for="event_type">{{ form.event_type.label }}</label>
-        {{ form.event_type(class_='field-input', id='event_type') }}
-        {% if form.event_type.errors %}
-            <p class="field-error">{{ form.event_type.errors[0] }}</p>
-        {% endif %}
-
         <label class="field-label" for="description">{{ form.description.label }}</label>
         {{ form.description(class_='field-input field-textarea', id='description', placeholder='Event description') }}
         {% if form.description.errors %}
             <p class="field-error">{{ form.description.errors[0] }}</p>
         {% endif %}
-
+        
         <label class="field-label" for="start_time">{{ form.start_time.label }}</label>
         {{ form.start_time(class_='field-input', id='start_time') }}
         {% if form.start_time.errors %}
@@ -54,6 +48,30 @@
         {% if form.end_time.errors %}
             <p class="field-error">{{ form.end_time.errors[0] }}</p>
         {% endif %}
+        
+        <label class="field-label" for="event_type">{{ form.event_type.label }}</label>
+        {{ form.event_type(class_='field-input', id='event_type') }}
+        {% if form.event_type.errors %}
+            <p class="field-error">{{ form.event_type.errors[0] }}</p>
+        {% endif %}
+
+        <label class="field-label" for="category">{{ form.category.label }}</label>
+        {{ form.category(class_='field-input', id='category') }}
+        {% if form.category.errors %}
+          <p class="field-error">{{ form.category.errors[0] }}</p>
+        {% endif %}
+
+        <label class="field-label" for="link">{{ form.link.label }}</label>
+        {{ form.link(class_='field-input', id='link', placeholder='https://example.com') }}
+        {% if form.link.errors %}
+          <p class="field-error">{{ form.link.errors[0] }}</p>
+        {% endif %}
+
+        <label class="field-label" for="contact">{{ form.contact.label }}</label>
+        {{ form.contact(class_='field-input', id='contact', placeholder='Email, phone, or organizer') }}
+        {% if form.contact.errors %}
+          <p class="field-error">{{ form.contact.errors[0] }}</p>
+        {% endif %}
 
         {{ form.submit(class_='action-button', value=(submit_label or "Add Event")) }}
         </form>
@@ -64,6 +82,9 @@
       <h3>Submitted Draft</h3>
       <p><strong>Name:</strong> {{ submitted_event.name }}</p>
       <p><strong>Type:</strong> {{ submitted_event.event_type }}</p>
+      <p><strong>Category:</strong> {{ submitted_event.category }}</p>
+      <p><strong>Link:</strong> {{ submitted_event.link or "N/A" }}</p>
+      <p><strong>Contact:</strong> {{ submitted_event.contact or "N/A" }}</p>
       <p><strong>Coordinates:</strong> {{ submitted_event.latitude }}, {{ submitted_event.longitude }}</p>
     </div>
   {% endif %}

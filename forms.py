@@ -1,5 +1,28 @@
 from wtforms import DateTimeLocalField, Form, StringField, PasswordField, SubmitField, TextAreaField, HiddenField, SelectField
 from wtforms.validators import DataRequired, Length, Optional, EqualTo, ValidationError, Email
+from enum import Enum
+
+class Type(Enum):
+    PROTEST = "protest"
+    MEETING = "meeting"
+    MARCH = "march"
+    COMMUNITY_SUPPORT = "community_support"
+    INCIDENT_REPORT = "incident_report"
+    OTHER = "other"
+
+class Category(Enum):
+    FUEL = "fuel"
+    COST_OF_LIVING = "cost_of_living"
+    HOUSING = "housing"
+    INTERNATIONAL = "international"
+    PALESTINE = "palestine"
+    SOCIAL = "social"
+    ENVIRONMENTAL = "environmental"
+    ECONOMIC = "economic"
+    REPUBLICAN = "republican"
+    ANTI_GOVERNMENT = "anti_government"
+    POLITICAL = "political"
+    OTHER = "other"
 
 class LoginForm(Form):
     username = StringField("Username", validators=[DataRequired(), Length(min=2, max=32)])
@@ -17,19 +40,19 @@ class RegistrationForm(Form):
 class AddEventForm(Form):
     name = StringField("Event Name", validators=[DataRequired(), Length(min=2, max=80)])
     description = TextAreaField("Description (Optional)", validators=[Optional(), Length(min=5, max=1200)])
+    link = StringField("Link (Optional)", validators=[Optional(), Length(max=255)])
+    contact = StringField("Contact (Optional)", validators=[Optional(), Length(max=120)])
     start_time = DateTimeLocalField("Start Time (Optional)", validators=[Optional()], format="%Y-%m-%dT%H:%M")
     end_time = DateTimeLocalField("End Time (Optional)", validators=[Optional()], format="%Y-%m-%dT%H:%M")
     event_type = SelectField(
         "Event Type",
         validators=[DataRequired()],
-        choices=[
-            ("protest", "Protest"),
-            ("meeting", "Meeting"),
-            ("march", "March"),
-            ("community", "Community Support"),
-            ("incident", "Incident Report"),
-            ("other", "Other")
-        ]
+        choices=[(event_type.value, event_type.value.replace("_", " ").title()) for event_type in Type]
+    )
+    category = SelectField(
+        "Category",
+        validators=[DataRequired()],
+        choices=[(category.value, category.value.replace("_", " ").title()) for category in Category]
     )
     latitude = HiddenField("Latitude", validators=[DataRequired()])
     longitude = HiddenField("Longitude", validators=[DataRequired()])

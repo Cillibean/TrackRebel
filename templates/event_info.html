@@ -21,16 +21,34 @@
           <p class="meta-value">{{ events[0].type or "N/A" }}</p>
         </div>
         <div class="meta-item">
+          <p class="meta-label">Category</p>
+          <p class="meta-value">{{ events[0].category or "N/A" }}</p>
+        </div>
+        <div class="meta-item">
           <p class="meta-label">Submitted By</p>
           <p class="meta-value">{{ events[0].submitter or "N/A" }}</p>
         </div>
         <div class="meta-item">
           <p class="meta-label">Start Time</p>
-          <p class="meta-value">{{ events[0].start_time or "Not set" }}</p>
+          <p class="meta-value">{{ events[0].start_time_display or "Not set" }}</p>
         </div>
         <div class="meta-item">
           <p class="meta-label">End Time</p>
-          <p class="meta-value">{{ events[0].end_time or "Not set" }}</p>
+          <p class="meta-value">{{ events[0].end_time_display or "Not set" }}</p>
+        </div>
+        <div class="meta-item">
+          <p class="meta-label">Link</p>
+          <p class="meta-value">
+            {% if events[0].link %}
+            <a href="{{ events[0].link }}" target="_blank" rel="noopener noreferrer">{{ events[0].link }}</a>
+            {% else %}
+            N/A
+            {% endif %}
+          </p>
+        </div>
+        <div class="meta-item">
+          <p class="meta-label">Contact</p>
+          <p class="meta-value">{{ events[0].contact or "N/A" }}</p>
         </div>
         <div class="meta-item meta-item-wide">
           <p class="meta-label">Coordinates</p>
@@ -46,6 +64,9 @@
       <div class="button-row">
         {% if logged_in and user.username == events[0].submitter %}
         <a class="action-button" href="/events/edit/{{ events[0].id }}">Edit Event</a>
+        <form action="/events/delete/{{ events[0].id }}" method="POST" onsubmit="return confirm('Delete this event? This cannot be undone.');">
+          <button type="submit" class="danger-button">Delete Event</button>
+        </form>
         {% endif %}
         <a class="action-button" href="/">Back To Map</a>
       </div>

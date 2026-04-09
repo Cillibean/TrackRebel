@@ -60,6 +60,9 @@ def add_event_to_db(submitted_event, event_id=None):
             "title": submitted_event["name"],
             "description": submitted_event["description"] if submitted_event["description"] else "",
             "type": submitted_event["event_type"] if submitted_event["event_type"] else "",
+            "category": submitted_event["category"] if submitted_event["category"] else "other",
+            "link": submitted_event["link"] if submitted_event["link"] else None,
+            "contact": submitted_event["contact"] if submitted_event["contact"] else None,
             "start_time": start_time_value,
             "end_time": submitted_event["end_time"].isoformat() if submitted_event["end_time"] else None,
             "latitude": float(submitted_event["latitude"]),
@@ -92,6 +95,9 @@ def get_all_events(db):
             "title": event.title,
             "description": event.description,
             "type": event.type,
+            "category": event.category,
+            "link": event.link,
+            "contact": event.contact,
             "start_time": event.start_time,
             "end_time": event.end_time,
             "latitude": event.latitude,
@@ -136,6 +142,9 @@ def search_events(request):
                 "title": event.title,
                 "description": event.description,
                 "type": event.type,
+                "category": event.category,
+                "link": event.link,
+                "contact": event.contact,
                 "start_time": event.start_time,
                 "end_time": event.end_time,
                 "latitude": event.latitude,
@@ -155,6 +164,9 @@ def get_event_by_id(event_id):
                 "title": result.title,
                 "description": result.description,
                 "type": result.type,
+                "category": result.category,
+                "link": result.link,
+                "contact": result.contact,
                 "start_time": result.start_time,
                 "end_time": result.end_time,
                 "latitude": result.latitude,
@@ -170,6 +182,9 @@ def update_event_in_db(event_id, updated_event):
             title=updated_event["name"],
             description=updated_event["description"] if updated_event["description"] else "",
             type=updated_event["event_type"] if updated_event["event_type"] else "",
+            category=updated_event["category"] if updated_event["category"] else "other",
+            link=updated_event["link"] if updated_event["link"] else None,
+            contact=updated_event["contact"] if updated_event["contact"] else None,
             start_time=updated_event["start_time"].isoformat() if updated_event["start_time"] else None,
             end_time=updated_event["end_time"].isoformat() if updated_event["end_time"] else None,
             latitude=float(updated_event["latitude"]),
@@ -178,3 +193,11 @@ def update_event_in_db(event_id, updated_event):
         db.execute(stmt)
         db.commit()
         print(f"Event with id {event_id} updated successfully")
+
+
+def delete_event_by_id(event_id):
+    with SessionLocal() as db:
+        stmt = delete(Event).where(Event.id == event_id)
+        result = db.execute(stmt)
+        db.commit()
+        return result.rowcount
