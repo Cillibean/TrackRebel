@@ -1,4 +1,5 @@
 import os
+
 from database import SessionLocal, engine, Base
 from models import User
 
@@ -18,6 +19,7 @@ def seed_user(db, username: str, password: str, label: str):
     db.commit()
     print(f"{label} user '{username}' created successfully")
 
+
 def seed_admin():
     admin_username = os.environ.get("ADMIN_USERNAME")
     admin_password = os.environ.get("ADMIN_PASSWORD")
@@ -28,7 +30,6 @@ def seed_admin():
         else:
             print("Skipping admin seed: set ADMIN_USERNAME and ADMIN_PASSWORD to create an admin user")
 
-        seed_user(db, "test", "test", "Test")
 
 if __name__ == "__main__":
     seed_admin()

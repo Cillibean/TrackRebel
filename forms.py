@@ -1,4 +1,4 @@
-from wtforms import DateTimeLocalField, Form, StringField, PasswordField, SubmitField, TextAreaField, HiddenField, SelectField
+from wtforms import DateTimeLocalField, Form, StringField, PasswordField, SubmitField, TextAreaField, HiddenField, SelectField, IntegerField
 from wtforms.validators import DataRequired, Length, Optional, EqualTo, ValidationError, Email
 from enum import Enum
 
@@ -57,3 +57,23 @@ class AddEventForm(Form):
     latitude = HiddenField("Latitude", validators=[DataRequired()])
     longitude = HiddenField("Longitude", validators=[DataRequired()])
     submit = SubmitField("Add Event")
+
+
+class SearchForm(Form):
+    name = StringField("Name", validators=[Optional(), Length(max=80)])
+    latitude = HiddenField("Latitude", validators=[Optional()])
+    longitude = HiddenField("Longitude", validators=[Optional()])
+    category = SelectField(
+        "Category",
+        validators=[Optional()],
+        choices=[("all", "All Categories")] + [(category.value, category.value.replace("_", " ").title()) for category in Category],
+    )
+    event_type = SelectField(
+        "Type",
+        validators=[Optional()],
+        choices=[("all", "All Types")] + [(event_type.value, event_type.value.replace("_", " ").title()) for event_type in Type],
+    )
+    start_time = DateTimeLocalField("Start Time", validators=[Optional()], format="%Y-%m-%dT%H:%M")
+    end_time = DateTimeLocalField("End Time", validators=[Optional()], format="%Y-%m-%dT%H:%M")
+    radius_km = IntegerField("Radius", validators=[Optional()])
+    submit = SubmitField("Search")

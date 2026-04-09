@@ -107,9 +107,10 @@ def get_all_events(db):
     return {"events": list_of_events}
 
 def get_bounding_box(lat, lng, radius_km):
+    lat = float(lat)
+    lng = float(lng)
+    radius_km = float(radius_km)
     lat_rad = math.radians(lat)
-
-    radius_km *= 0.25 
     
     delta_lat = radius_km / 111.1
 
@@ -125,16 +126,19 @@ def get_bounding_box(lat, lng, radius_km):
 def search_events(request):
     with SessionLocal() as db:
         delete_expired_events(db)
-        bb = get_bounding_box(request.get("latitude"), request.get("longitude"), request.get("radius"))
-        stmt = select(Event).filter(Event.title.ilike(f"%{request.get("title")}%") if request.get("title") else True,
+        bb = get_bounding_box(request.get("latitude"), request.get("longitude"), request.get("radius_km"))
+        stmt = select(Event).filter(Event.title.ilike(f"%{request.get("name")}%") if request.get("name") else True,
                                         Event.submitter.ilike(f"%{request.get("submitter")}%") if request.get("submitter") else True,
                                         Event.start_time >= request.get("start_time") if request.get("start_time") else True,
                                         Event.end_time <= request.get("end_time") if request.get("end_time") else True,
                                         Event.latitude >= bb["min_lat"],
                                         Event.latitude <= bb["max_lat"],
                                         Event.longitude >= bb["min_lng"],
-                                        Event.longitude <= bb["max_lng"])
+                                        Event.longitude <= bb["max_lng"],
+                                        Event.category == request.get("category") if request.get("category") and request.get("category") != "all" else True,
+                                        Event.type == request.get("event_type") if request.get("event_type") and request.get("event_type") != "all" else True)
         result=db.execute(stmt).scalars().all()
+        print(f"Search returned {len(result)} event(s) for query: {request}")
         list_of_events = []
         for event in result:
             list_of_events.append({

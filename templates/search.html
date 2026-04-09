@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="search-card">
+  <div class="search-head">
+    <span class="tag">SEARCH PAGE</span>
+    <h2>Search the map.</h2>
+    <div class="search-head-note">Use this map to find acts of rebellion near you.</div>
+  </div>
+
+  <form class="search-form" method="POST" action="">
+    {{ search_form.latitude(id='latitude') }}
+    {{ search_form.longitude(id='longitude') }}
+    {{ search_form.category(class_='search-hidden-filter', id='search-category', hidden='hidden') }}
+    {{ search_form.event_type(class_='search-hidden-filter', id='search-type', hidden='hidden') }}
+
+    <div class="search-form-grid">
+      <div class="search-form-field search-form-field-wide">
+        <label class="field-label" for="search-name">{{ search_form.name.label.text }}</label>
+        {{ search_form.name(class_='field-input', id='search-name', placeholder='Event name') }}
+      </div>
+
+      <div class="search-form-field">
+        <label class="field-label" for="search-start-time">{{ search_form.start_time.label.text }}</label>
+        {{ search_form.start_time(class_='field-input', id='search-start-time') }}
+      </div>
+
+      <div class="search-form-field">
+        <label class="field-label" for="search-end-time">{{ search_form.end_time.label.text }}</label>
+        {{ search_form.end_time(class_='field-input', id='search-end-time') }}
+      </div>
+
+      <div class="search-form-field search-form-field-wide">
+        <div class="search-radius-row">
+          <label class="field-label" for="search-radius">Radius</label>
+          <output class="search-radius-value" for="search-radius" id="search-radius-value">{{ search_form.radius_km.data or 25 }} km</output>
+        </div>
+        <input
+          class="search-radius-slider"
+          id="search-radius"
+          name="radius_km"
+          type="range"
+          min="1"
+          max="200"
+          step="1"
+          value="{{ search_form.radius_km.data or 25 }}"
+        >
+        <div class="search-radius-scale" aria-hidden="true">
+          <span>1 km</span>
+          <span>200 km</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="button-row">
+      {{ search_form.submit(class_='action-button') }}
+      <button type="reset" class="ghost-button">Reset</button>
+    </div>
+  </form>
+
+  <div class="search-layout">
+    <aside class="filter-panel filter-panel-categories" aria-label="Category filters">
+      <div>
+        <h3>Categories</h3>
+      </div>
+      <div class="filter-scroll">
+        {% for option in category_options %}
+        <button type="button" class="filter-chip" data-filter-group="category" data-filter-value="{{ option.value }}">
+          <span class="filter-chip-emoji" aria-hidden="true">{{ option.emoji }}</span>
+          <span class="filter-chip-text">
+            <span class="filter-chip-label">{{ option.label }}</span>
+            <span class="filter-chip-note">{{ option.note }}</span>
+          </span>
+        </button>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <div class="search-map-wrap">
+      <script id="events-data" type="application/json">{{ all_events|default([])|tojson }}</script>
+      <script type="text/javascript">
+          var events = JSON.parse(document.getElementById("events-data").textContent);
+      </script>
+      <div id="map" class="search-map"></div>
+    </div>
+    <aside class="filter-panel filter-panel-types" aria-label="Type filters">
+      <div>
+        <h3>Types</h3>
+      </div>
+      <div class="filter-scroll">
+        {% for option in type_options %}
+        <button type="button" class="filter-chip" data-filter-group="type" data-filter-value="{{ option.value }}">
+          <span class="filter-chip-emoji" aria-hidden="true">{{ option.emoji }}</span>
+          <span class="filter-chip-text">
+            <span class="filter-chip-label">{{ option.label }}</span>
+            <span class="filter-chip-note">{{ option.note }}</span>
+          </span>
+        </button>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+
+  <div class="button-row">
+    {% if logged_in %}
+    <a class="action-button" href="/events/add">Add Event</a>
+    {% else %}
+    <a class="action-button" href="/login">Sign In</a>
+    {% endif %}
+    <a class="ghost-button" href="/">Back To Home</a>
+  </div>
+
+  <script type="text/javascript" src="{{ request.url_for('static', path='js/map.js') }}"></script>
+  <script type="text/javascript" src="{{ request.url_for('static', path='js/search_map.js') }}"></script>
+  <script type="text/javascript">
+    var searchRadius = document.getElementById("search-radius");
+    var searchRadiusValue = document.getElementById("search-radius-value");
+
+    if (searchRadius && searchRadiusValue) {
+      searchRadius.addEventListener("input", function () {
+        searchRadiusValue.textContent = searchRadius.value + " km";
+      });
+    }
+
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function toDateTimeLocalString(date) {
+      return date.getFullYear() + "-" +
+        pad(date.getMonth() + 1) + "-" +
+        pad(date.getDate()) + "T" +
+        pad(date.getHours()) + ":" +
+        pad(date.getMinutes());
+    }
+
+    function getDefaultStartTime() {
+      var d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return toDateTimeLocalString(d);
+    }
+
+    function getDefaultEndTime() {
+      var d = new Date();
+      d.setMonth(d.getMonth() + 1);
+      d.setHours(23, 59, 0, 0);
+      return toDateTimeLocalString(d);
+    }
+
+    var startTimeInput = document.getElementById("search-start-time");
+    var endTimeInput = document.getElementById("search-end-time");
+
+    if (startTimeInput && !startTimeInput.value) {
+      startTimeInput.value = getDefaultStartTime();
+    }
+
+    if (endTimeInput && !endTimeInput.value) {
+      endTimeInput.value = getDefaultEndTime();
+    }
+
+    var searchFormForDates = document.querySelector(".search-form");
+    if (searchFormForDates) {
+      searchFormForDates.addEventListener("reset", function () {
+        window.setTimeout(function () {
+          if (startTimeInput) {
+            startTimeInput.value = getDefaultStartTime();
+          }
+          if (endTimeInput) {
+            endTimeInput.value = getDefaultEndTime();
+          }
+        }, 0);
+      });
+    }
+  </script>
+  <script type="text/javascript" src="{{ request.url_for('static', path='js/event_display.js') }}"></script>
+</section>
+{% endblock %}

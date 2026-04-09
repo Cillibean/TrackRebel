@@ -7,9 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, update, delete, insert
 from sqlalchemy.orm import Session
 from database import SessionLocal, Base, engine
-from events_db import add_event_to_db, get_all_events, get_event_by_id, delete_expired_events, delete_event_by_id
+from events_db import add_event_to_db, get_all_events, get_event_by_id, delete_expired_events, delete_event_by_id, search_events
 from models import User
-from forms import LoginForm, AddEventForm, RegistrationForm
+from forms import LoginForm, AddEventForm, RegistrationForm, SearchForm, Category, Type
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
@@ -44,6 +44,11 @@ async def log_unhandled_exceptions(request: Request, call_next):
 @app.on_event("startup")
 async def startup_init_db():
     global cleanup_task
+    if SECRET_KEY == "dev-secret":
+        logger.warning(
+            "JWT_SECRET_KEY is not set — using insecure default. "
+            "Set the JWT_SECRET_KEY environment variable before deploying."
+        )
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified at startup")
     cleanup_task = asyncio.create_task(_expired_events_cleanup_loop())
@@ -152,6 +157,89 @@ def base_context(request: Request, current_user: Optional[User] = Depends(get_cu
         "auth_error": getattr(request.state, "auth_error", None),
     }
 
+
+def _build_filter_options(enum_cls, emoji_map: dict[str, str], note_map: dict[str, str], all_label: str, all_emoji: str, all_note: str):
+    options = [
+        {
+            "value": "all",
+            "label": all_label,
+            "emoji": all_emoji,
+            "note": all_note,
+        }
+    ]
+
+    for item in enum_cls:
+        options.append(
+            {
+                "value": item.value,
+                "label": item.value.replace("_", " ").title(),
+                "emoji": emoji_map.get(item.value, "🧭"),
+                "note": note_map.get(item.value, "Mapped filter option."),
+            }
+        )
+
+    return options
+
+
+SEARCH_CATEGORY_OPTIONS = _build_filter_options(
+    Category,
+    {
+        "fuel": "⛽",
+        "cost_of_living": "🛒",
+        "housing": "🏠",
+        "international": "🌍",
+        "palestine": "🇵🇸",
+        "social": "🤝",
+        "environmental": "🌿",
+        "economic": "📈",
+        "republican": "☘️",
+        "anti_government": "🏴",
+        "political": "🏛️",
+        "other": "🧭",
+    },
+    {
+        "fuel": "Fuel costs, supply pressure, and energy action",
+        "cost_of_living": "Bills, prices, and household pressure",
+        "housing": "Rents, evictions, and tenant action",
+        "international": "International solidarity and global response",
+        "palestine": "Solidarity actions and demonstrations",
+        "social": "Community issues and solidarity work",
+        "environmental": "Climate, land, water, and local impact",
+        "economic": "Jobs, austerity, and wider economic pressure",
+        "republican": "Republican events, memorials, and mobilisation",
+        "anti_government": "Direct opposition to government policy",
+        "political": "Campaigns, policy, and public response",
+        "other": "Anything outside the main category set",
+    },
+    "All Categories",
+    "🗂️",
+    "Show every category on the map",
+)
+
+
+SEARCH_TYPE_OPTIONS = _build_filter_options(
+    Type,
+    {
+        "protest": "📢",
+        "meeting": "🗣️",
+        "march": "🚶",
+        "community_support": "🧰",
+        "incident_report": "⚠️",
+        "other": "🧭",
+    },
+    {
+        "protest": "Direct demonstration and turnout",
+        "meeting": "Assemblies, briefings, and planning sessions",
+        "march": "Route-based public mobilisation",
+        "community_support": "Mutual aid and local support efforts",
+        "incident_report": "Reports tied to a place on the map",
+        "other": "Catch-all for anything outside the main set",
+    },
+    "All Types",
+    "🧩",
+    "Show every event type on the map",
+)
+
 @app.get("/login")
 async def login_form(request: Request):
     form = LoginForm()
@@ -247,6 +335,60 @@ async def index(request: Request, current_user: Optional[User] = Depends(get_cur
             **base_context(request, current_user),
             "all_events": all_events
         }
+    )
+
+
+@app.get("/events/search")
+async def search_page(request: Request, current_user: Optional[User] = Depends(get_current_user_optional), db: Session = Depends(get_db)):
+    all_events = []
+    search_form = SearchForm(data={"category": "all", "event_type": "all", "radius_km": 25})
+    logger.info("Loaded search page with %s event(s)", len(all_events))
+
+    return templates.TemplateResponse(
+        request=request,
+        name="search.html",
+        context={
+            **base_context(request, current_user),
+            "all_events": all_events,
+            "category_options": SEARCH_CATEGORY_OPTIONS,
+            "search_form": search_form,
+            "type_options": SEARCH_TYPE_OPTIONS,
+            "shell_class": "shell-wide",
+        },
+    )
+
+@app.post("/events/search")
+async def search_submit(request: Request, current_user: Optional[User] = Depends(get_current_user_optional), db: Session = Depends(get_db)):
+    form = SearchForm(formdata=await request.form())
+    search_results = []
+    if form.validate():
+        search_criteria = {
+            "name": form.name.data,
+            "latitude": form.latitude.data,
+            "longitude": form.longitude.data,
+            "category": form.category.data,
+            "event_type": form.event_type.data,
+            "start_time": form.start_time.data.isoformat() if form.start_time.data else None,
+            "end_time": form.end_time.data.isoformat() if form.end_time.data else None,
+            "radius_km": form.radius_km.data or 25,
+        }
+        logger.info(f"Performing search with criteria: {search_criteria}")
+        search_results = search_events(search_criteria)
+        logger.info(f"Search returned {len(search_results.get('events', []))} event(s)")
+    else:
+        logger.info(f"Search form validation failed: {form.errors}")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="search.html",
+        context={
+            **base_context(request, current_user),
+            "all_events": search_results.get("events", []),
+            "category_options": SEARCH_CATEGORY_OPTIONS,
+            "search_form": form,
+            "type_options": SEARCH_TYPE_OPTIONS,
+            "shell_class": "shell-wide",
+        },
     )
 
 @app.get("/events/add")

@@ -18,11 +18,11 @@
       <div class="event-meta-grid">
         <div class="meta-item">
           <p class="meta-label">Type</p>
-          <p class="meta-value">{{ events[0].type or "N/A" }}</p>
+          <p class="meta-value">{{ events[0].type|replace('_', ' ')|title if events[0].type else "N/A" }}</p>
         </div>
         <div class="meta-item">
           <p class="meta-label">Category</p>
-          <p class="meta-value">{{ events[0].category or "N/A" }}</p>
+          <p class="meta-value">{{ events[0].category|replace('_', ' ')|title if events[0].category else "N/A" }}</p>
         </div>
         <div class="meta-item">
           <p class="meta-label">Submitted By</p>
@@ -39,8 +39,10 @@
         <div class="meta-item">
           <p class="meta-label">Link</p>
           <p class="meta-value">
-            {% if events[0].link %}
+            {% if events[0].link and (events[0].link.startswith('https://') or events[0].link.startswith('http://')) %}
             <a href="{{ events[0].link }}" target="_blank" rel="noopener noreferrer">{{ events[0].link }}</a>
+            {% elif events[0].link %}
+            {{ events[0].link }}
             {% else %}
             N/A
             {% endif %}
@@ -68,7 +70,7 @@
           <button type="submit" class="danger-button">Delete Event</button>
         </form>
         {% endif %}
-        <a class="action-button" href="/">Back To Map</a>
+        <a class="action-button" href="/events/search">Back To Map</a>
       </div>
     </article>
   </div>

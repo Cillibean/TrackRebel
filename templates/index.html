@@ -6,12 +6,13 @@
       <span class="tag">HOME PAGE</span>
       <h2>Welcome to TrackRebel.</h2>
       <p>Track the resistance of the Irish People.</p>
-      <div class="button-row">
-        {% if logged_in %}
-          <a class="action-button" href="/events/add">Add Event</a>
-        {% else %}
-          <a class="action-button" href="/login">Sign In</a>
-        {% endif %}
+        <div class="button-row">
+          {% if logged_in %}
+            <a class="action-button" href="/events/add">Add Event</a>
+          {% else %}
+            <a class="action-button" href="/login">Sign In</a>
+          {% endif %}
+          <a class="ghost-button" href="/events/search">Search Map</a>
       </div>
     </div>
   </section>
