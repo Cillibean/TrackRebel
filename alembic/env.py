@@ -11,10 +11,32 @@ from alembic import context
 config = context.config
 import os
 
-config.set_main_option(
-    "sqlalchemy.url",
-    os.environ.get("LOCAL_DATABASE_URL") or os.environ.get("DATABASE_URL")
-)
+_db_url = os.environ.get("LOCAL_DATABASE_URL")
+_prod_url = os.environ.get("DATABASE_URL")
+_allow_prod = os.environ.get("ALLOW_PROD_MIGRATIONS") == "true"
+
+if not _db_url:
+    # No local URL — only allow if explicitly unlocked for production deploy.
+    if _prod_url and _allow_prod:
+        _db_url = _prod_url
+    elif _prod_url:
+        raise RuntimeError(
+            "Refusing to run Alembic against DATABASE_URL (production).\n"
+            "For local work: set LOCAL_DATABASE_URL=sqlite:///./rebel_db.sqlite3 in your .env\n"
+            "For a production deploy: set ALLOW_PROD_MIGRATIONS=true alongside DATABASE_URL."
+        )
+    else:
+        raise RuntimeError(
+            "No database URL found. Set LOCAL_DATABASE_URL in your .env for local development."
+        )
+elif _prod_url and _db_url == _prod_url:
+    # Catch the case where someone sets LOCAL_DATABASE_URL to the prod URL by mistake.
+    raise RuntimeError(
+        "LOCAL_DATABASE_URL must not be the same as DATABASE_URL (production). "
+        "Use a separate local SQLite file."
+    )
+
+config.set_main_option("sqlalchemy.url", _db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
