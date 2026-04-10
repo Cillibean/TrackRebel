@@ -26,6 +26,33 @@ def _parse_event_datetime(value):
     return parsed.astimezone(timezone.utc)
 
 
+def _event_matches_time_window(event, search_start_utc, search_end_utc):
+    """Return True when an event overlaps the requested search window.
+
+    Events with missing end times are treated as instantaneous at start_time.
+    Events with no time metadata are not excluded by time filtering.
+    """
+    event_start_utc = _parse_event_datetime(event.start_time)
+    event_end_utc = _parse_event_datetime(event.end_time)
+
+    if event_start_utc and not event_end_utc:
+        event_end_utc = event_start_utc
+    elif event_end_utc and not event_start_utc:
+        event_start_utc = event_end_utc
+
+    # If the event has no parseable date bounds, leave it in results.
+    if not event_start_utc and not event_end_utc:
+        return True
+
+    if search_start_utc and event_end_utc and event_end_utc < search_start_utc:
+        return False
+
+    if search_end_utc and event_start_utc and event_start_utc > search_end_utc:
+        return False
+
+    return True
+
+
 def delete_expired_events(db):
     now_utc = datetime.now(timezone.utc)
     events = db.execute(select(Event)).scalars().all()
@@ -127,17 +154,29 @@ def search_events(request):
     with SessionLocal() as db:
         delete_expired_events(db)
         bb = get_bounding_box(request.get("latitude"), request.get("longitude"), request.get("radius_km"))
-        stmt = select(Event).filter(Event.title.ilike(f"%{request.get("name")}%") if request.get("name") else True,
-                                        Event.submitter.ilike(f"%{request.get("submitter")}%") if request.get("submitter") else True,
-                                        Event.start_time >= request.get("start_time") if request.get("start_time") else True,
-                                        Event.end_time <= request.get("end_time") if request.get("end_time") else True,
-                                        Event.latitude >= bb["min_lat"],
-                                        Event.latitude <= bb["max_lat"],
-                                        Event.longitude >= bb["min_lng"],
-                                        Event.longitude <= bb["max_lng"],
-                                        Event.category == request.get("category") if request.get("category") and request.get("category") != "all" else True,
-                                        Event.type == request.get("event_type") if request.get("event_type") and request.get("event_type") != "all" else True)
-        result=db.execute(stmt).scalars().all()
+        stmt = select(Event).filter(
+            Event.title.ilike(f"%{request.get('name')}%") if request.get("name") else True,
+            Event.submitter.ilike(f"%{request.get('submitter')}%") if request.get("submitter") else True,
+            Event.latitude >= bb["min_lat"],
+            Event.latitude <= bb["max_lat"],
+            Event.longitude >= bb["min_lng"],
+            Event.longitude <= bb["max_lng"],
+            Event.category == request.get("category") if request.get("category") and request.get("category") != "all" else True,
+            Event.type == request.get("event_type") if request.get("event_type") and request.get("event_type") != "all" else True,
+        )
+        db_results = db.execute(stmt).scalars().all()
+
+        search_start_utc = _parse_event_datetime(request.get("start_time"))
+        search_end_utc = _parse_event_datetime(request.get("end_time"))
+
+        if search_start_utc and search_end_utc and search_start_utc > search_end_utc:
+            search_start_utc, search_end_utc = search_end_utc, search_start_utc
+
+        result = [
+            event for event in db_results
+            if _event_matches_time_window(event, search_start_utc, search_end_utc)
+        ]
+
         print(f"Search returned {len(result)} event(s) for query: {request}")
         list_of_events = []
         for event in result:
